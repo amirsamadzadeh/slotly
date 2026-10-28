@@ -1,0 +1,48 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String         @id @default(uuid())
+  email        String         @unique
+  password     String
+  name         String
+  username     String         @unique // لینک اختصاصی مثل slotly.com/amir
+  image        String?        // عکس پروفایل (اختیاری)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  
+  // روابط جدول‌ها
+  availabilities Availability[]
+  bookings     Booking[]      @relation("HostBookings")
+}
+
+model Availability {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dayOfWeek Int      // 0 مخفف یکشنبه، 1 شنبه تا 6 پنجشنبه
+  startTime String   // مثلا "09:00"
+  endTime   String   // مثلا "17:00"
+
+  @@unique([userId, dayOfWeek])
+}
+
+model Booking {
+  id          String   @id @default(uuid())
+  hostId      String
+  host        User     @relation("HostBookings", fields: [hostId], references: [id], onDelete: Cascade)
+  clientName  String
+  clientEmail String
+  clientNotes String?  // توضیحات تکمیلی مهمان
+  startTime   DateTime // تاریخ و ساعت دقیق شروع جلسه
+  endTime     DateTime // تاریخ و ساعت دقیق پایان جلسه
+  status      String   @default("PENDING") // وضعیت رزرو (در انتظار، تایید شده)
+  createdAt   DateTime @default(now())
+}
