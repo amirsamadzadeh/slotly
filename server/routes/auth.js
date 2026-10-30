@@ -3,6 +3,7 @@ const router = express.Router();
 const prisma = require("../lib/prisma");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const authMiddleWare = require("../middlewares/auth.middleware");
 
 router.post("/register", async (req, res) => {
   try {
@@ -106,6 +107,38 @@ router.post("/login", async (req, res) => {
   } catch (err) {
     console.log("error -> ", err);
     res.status(500).json({ message: "خطای سرور" });
+  }
+});
+
+router.get("/me", authMiddleWare, async (req, res) => {
+  try {
+    const id = req.user.id;
+    if (!id) {
+      return res.status(401).json({ message: "unauthorized person ." });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: {
+        id,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        username: true,
+        createdAt: true,
+        image: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(401).json({ message: "unauthorized person ." });
+    }
+
+    return res.status(200).json({ data: user });
+  } catch (error) {
+    console.log("error message =>", error);
+    return res.status(500).json({ message: "internal server error ." });
   }
 });
 
